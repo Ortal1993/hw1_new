@@ -14,10 +14,10 @@ void ctrlZHandler(int sig_num) {
         jobsList.currJobInFg->setStatus(STOPPED);
         jobsList.currJobInFg->setTime();
         jobsList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobsList.currJobInFg->getJobID(), jobsList.currJobInFg));//added job to jobList
-        pid_t p = jobsList.currJobInFg->GetProcessID();
-        kill(p, SIGSTOP);
+        pid_t pid = jobsList.currJobInFg->GetProcessID();
+        kill(pid, SIGSTOP);
         jobsList.currJobInFg = nullptr;
-        cout << "smash: process " << p << " was stopped" << endl;
+        cout << "smash: process " << pid << " was stopped" << endl;
     }
 }
 

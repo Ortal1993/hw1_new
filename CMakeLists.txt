@@ -3,4 +3,10 @@ project(hw1_new)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(hw1_new main.cpp)
+add_executable(hw1_new
+        #main.cpp
+        smash.cpp
+        Commands.h
+        Commands.cpp
+        signals.h
+        signals.cpp)

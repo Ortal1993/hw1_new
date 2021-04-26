@@ -49,10 +49,7 @@ class ExternalCommand : public Command {
 
 ///func 1 - chprompt
 class RedirectionCommand : public Command {///why inherits from Command?
-    //private:
-        //std::string* ptrPrompt;
     public:
-        //explicit RedirectionCommand(const char* cmd_line, std::string* ptrPrompt): Command(cmd_line), ptrPrompt(ptrPrompt){};
         explicit RedirectionCommand(const char* cmd_line): Command(cmd_line){};//, ptrPrompt(ptrPrompt){};
         virtual ~RedirectionCommand() {}
         void execute() override;
@@ -81,9 +78,6 @@ class GetCurrDirCommand : public BuiltInCommand {
 
 ///func 4 - cd
 class ChangeDirCommand : public BuiltInCommand {
-    private:
-        //char** lastPwd;
-        //char** currentPwd;
     public:
         ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}//ChangeDirCommand(const char* cmd_line, char** lastPwd = nullptr, char** currentPwd = nullptr);
         virtual ~ChangeDirCommand() {}
@@ -103,7 +97,6 @@ class JobsList {///it should also be created once, no?
                 STATUS status;
             public:
                 JobEntry(pid_t pid, std::string command, time_t time, STATUS status = BACKGROUND):processID(processID), command(command), enterTime(enterTime), status(status){};
-                JobEntry(pid_t pid, std::string command, time_t time, STATUS status = BACKGROUND):processID(processID), command(command), enterTime(time), status(status){};
                 JobEntry(const JobEntry& jobEntry) = default;
                 ~JobEntry() = default;
                 int GetProcessID();
@@ -181,14 +174,14 @@ class QuitCommand : public BuiltInCommand {
 class PipeCommand : public Command {
     // TODO: Add your data members
 public:
-    PipeCommand(const char* cmd_line);
+    PipeCommand(const char* cmd_line): Command(cmd_line){};
     virtual ~PipeCommand() {}
     void execute() override;
 };
 
 class CatCommand : public BuiltInCommand {
     public:
-        CatCommand(const char* cmd_line);
+        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line){};
         virtual ~CatCommand() {}
         void execute() override;
 };

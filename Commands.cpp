@@ -94,26 +94,8 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
-	// For example:
-/*
   string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
-
-  if (firstWord.compare("pwd") == 0) {
-    return new GetCurrDirCommand(cmd_line);
-  }
-  else if (firstWord.compare("showpid") == 0) {
-    return new ShowPidCommand(cmd_line);
-  }
-  else if ...
-  .....
-  else {
-    return new ExternalCommand(cmd_line);
-  }
-  */
-
-  string cmd_s = _trim(string(cmd_line));
-  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(WHITESPACE));///originally \n
+  string firstWord = cmd_s.substr(0, cmd_s.find_first_of(WHITESPACE));///originally \n///if we get chprompt&
 
   if(firstWord.compare("chprompt") == 0){
       return new RedirectionCommand(cmd_line);
@@ -168,8 +150,8 @@ JobsList& SmallShell::getJobsList() {
 }
 
 Command::Command(const char *cmd_line): cmd_line(cmd_line), sms(SmallShell::getInstance()){
-    //this->sms = SmallShell::getInstance();
-
+    ///_parseCommandLine(cmd_line, args);
+    ///_parseCommandLine(cmd_line, )
     string toParse = (string)this->cmd_line;
     toParse = _trim(toParse);
     while(toParse.length() > 0){///arguments[0] = command
@@ -187,9 +169,6 @@ Command::Command(const char *cmd_line): cmd_line(cmd_line), sms(SmallShell::getI
 }
 
 string Command::GetArgument(int argNum) {
-    /*if (argNum < 1 || argNum > this->GetNumOfArgs()){///arguments[0] = command
-        return "";
-    }*/
     return this->arguments[argNum];
 }
 
@@ -202,15 +181,9 @@ void ExternalCommand::execute(){
     pid_t pid = fork();
     if( pid == 0 ) { // child process code goes here
         setpgrp();
-        string originalCmd = (string)getCmd();
-        char * args = new char(sizeof (originalCmd.size()));
-        strcpy(args,getCmd());
-        char* argv[] = {(char*)"/bin/bash", (char*)"-c", args, NULL};
+        const char* originalCmd = getCmd();
+        char* argv[] = {(char*)"/bin/bash", (char*)"-c", (char*) originalCmd, NULL};
         execv(argv[0], argv);
-
-        /*sm.getJobsList().currJobInFg = pid;///???
-        cout << "pid child is:" << sm.getJobsList().currJobInFg << endl;*/
-        ///delete args?
     }
     else{//father
         int lastArgument = this->GetNumOfArgs();
@@ -466,6 +439,36 @@ void QuitCommand::execute() {
     }
 }
 
+///pipe
+void PipeCommand::execute() {
+    char currChar;
+    int i = 0;
+    while(i < GetNumOfArgs()) {
+        string currArg = this->GetArgument(i);
+        if (currArg == "<") {
+
+        } else if (currArg == "<<") {
+
+        } else if (currArg == "|") {
+
+        } else if (currArg == "|&") {
+
+        }
+    }
+    /*int my_pipe[2];
+    char buffer[2];
+    int num;
+    pipe(my_pipe);
+    if(fork() == 0){//child
+        setpgrp();
+        close(my_pipe[1]);
+        read(my_pipe[0], buffer, num);
+    }else{//father
+        close(my_pipe[0]);
+        write(my_pipe[1], , num);
+    }*/
+}
+
 /*const char* SmashExceptions::what() const noexcept{
     return what_message.c_str();
 }
@@ -479,18 +482,6 @@ JobsList::JobEntry* JobsList::getJobById(int jobId) {
         return nullptr;
     }
 }
-
-/*JobsList::JobEntry *JobsList::getLastStoppedJob(int jobId) {///in original passing pointer to int
-    return this->jobsMap.find(jobId)->second;
-}*/
-
-/*int JobsList::getLastStoppedJobID() {
-    return this->lastStoppedJobID;
-}*/
-
-/*void JobsList::setLastStoppedJobID(int maxJobId) {
-    this->lastStoppedJobID = maxJobId;
-}*/
 
 int JobsList::JobEntry::GetProcessID() {
     return this->processID;
