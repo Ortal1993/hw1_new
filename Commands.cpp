@@ -182,6 +182,9 @@ void ExternalCommand::execute(){
     if( pid == 0 ) { // child process code goes here
         setpgrp();
         const char* originalCmd = getCmd();
+        _removeBackgroundSign((char *)originalCmd);
+        string str = originalCmd;
+        cout << "CMD IS: " << str << endl;
         char* argv[] = {(char*)"/bin/bash", (char*)"-c", (char*) originalCmd, NULL};
         execv(argv[0], argv);
         exit(1);
@@ -193,7 +196,7 @@ void ExternalCommand::execute(){
     else{//father
         int lastArgument = this->GetNumOfArgs();
         string str = this->GetArgument(lastArgument - 1);///what if there are many spaces before &
-        if (str != "&" && str[str.size()-1] != '&'){//if should run in foreground
+        if(!_isBackgroundComamnd(getCmd())){//if should run in foreground
             waitpid(pid,NULL, WUNTRACED);///THE THIRD ARG WAS NULL - I CHANGED TO WUNTRACED
         }
         else{//should run in background
@@ -513,7 +516,7 @@ JobsList::JobEntry* JobsList::getJobById(int jobId) {
     this->lastStoppedJobID = maxJobId;
 }*/
 
-int JobsList::JobEntry::GetProcessID() {
+//int JobsList::JobEntry::GetProcessID() {
     return this->processID;
 }
 
