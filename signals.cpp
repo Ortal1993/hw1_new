@@ -13,7 +13,7 @@ void ctrlZHandler(int sig_num) {
     if (jobsList.currJobInFg) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
         jobsList.currJobInFg->setStatus(STOPPED);
         jobsList.currJobInFg->setTime();
-        jobsList.jobsMap->insert(std::pair<int,JobsList::JobEntry*>(jobsList.currJobInFg->getJobID(), jobsList.currJobInFg));//added job to jobList
+        jobsList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobsList.currJobInFg->getJobID(), jobsList.currJobInFg));//added job to jobList
         pid_t pid = jobsList.currJobInFg->GetProcessID();
         kill(pid, SIGSTOP);
         jobsList.currJobInFg = nullptr;

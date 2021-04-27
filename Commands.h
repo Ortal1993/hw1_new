@@ -108,13 +108,13 @@ class JobsList {///it should also be created once, no?
                 void setTime();
                 /*void SetSignal(int signal);*/
         };
-        std::map<int, JobEntry*>* jobsMap;///the key is jobID
+        std::map<int, JobEntry*> jobsMap;///the key is jobID
         JobEntry* currJobInFg;
         int nextID;
         int lastStoppedJobID;
     public:
-        //JobsList():jobsMap(jobsMap), currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){};//if lastStoppedJobID is -1 than no process has been stopped
-        JobsList():currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){ this->jobsMap = new std::map<int, JobEntry*>();};//if lastStoppedJobID is -1 than no process has been stopped
+        JobsList():jobsMap(), currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){};//if lastStoppedJobID is -1 than no process has been stopped
+        //JobsList():currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){ this->jobsMap = new std::map<int, JobEntry*>();};//if lastStoppedJobID is -1 than no process has been stopped
         ~JobsList() = default;
         void addJob(Command* cmd, bool isStopped = false);
         void printJobsList();
@@ -194,9 +194,9 @@ class SmallShell {
         std::string lastPwd;
         std::string currentPwd;
         std::string prompt;
-        JobsList* jobsList;
-        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(jobsList){}///getpid is always successful according to man
-        SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"){ this->jobsList = new JobsList();}///getpid is always successful according to man
+        JobsList jobsList;
+        SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}///getpid is always successful according to man
+        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"){ this->jobsList = new JobsList();}///getpid is always successful according to man
     public:
         class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);

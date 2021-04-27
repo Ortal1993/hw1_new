@@ -146,7 +146,7 @@ std::string SmallShell::GetPrompt() {
 }
 
 JobsList& SmallShell::getJobsList() {
-    return *this->jobsList;
+    return this->jobsList;
 }
 
 Command::Command(const char *cmd_line): cmd_line(cmd_line), sms(SmallShell::getInstance()){
@@ -204,7 +204,7 @@ void ExternalCommand::execute(){
             cout << "SON PID: " << newJobEntry->GetProcessID() <<endl;
             cout << "JOB ID: " << newJobEntry->getJobID() <<endl;
             jobs.nextID++;
-            jobs.jobsMap->insert(std::pair<int,JobsList::JobEntry*>(newJobId,newJobEntry));//added the job to the job list
+            jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(newJobId,newJobEntry));//added the job to the job list
         }
     }
 
@@ -287,7 +287,7 @@ void JobsCommand::execute(){
     JobsList& jobs = getSmallShell().getJobsList();
     std::vector<int> vec;
     pid_t status = 0;
-    for(auto it = jobs.jobsMap->begin(); it != jobs.jobsMap->end(); ++it){
+    for(auto it = jobs.jobsMap.begin(); it != jobs.jobsMap.end(); ++it){
         cout << "[" << it->first << "] " << it->second->GetCommand() << ": " << it->second->GetProcessID() << " " << difftime(time(NULL), it->second->getTime()) << " secs" << endl;
         status = waitpid(it->second->GetProcessID(), nullptr, WNOHANG);
         cout << "STATUS " << status <<endl;
@@ -298,7 +298,8 @@ void JobsCommand::execute(){
         if (status != 0) { //this process is zombie (terminated), need to remove from jobs
             vec.push_back(it->first);
             cout << "HERE! status is: " << it->second->getStatus() <<endl;
-        }else if (status == 0){
+        }
+        if (status == 0){//still running
             if (it->second->getStatus() == STOPPED){
                 cout << "[" << it->first << "] " << it->second->GetCommand() << ": " << it->second->GetProcessID() << " " << difftime(it->second->getTime(), time(NULL)) << " secs" << " (stopped)" <<endl;
             } else {
@@ -308,7 +309,7 @@ void JobsCommand::execute(){
     }
     for (auto it = vec.begin(); it != vec.end(); ++it){ //removes the terminated process from the jobsList
         cout << "JOBID TO BE ERASED " << *it << endl;
-        jobs.jobsMap->erase(jobs.jobsMap->find(*it));
+        jobs.jobsMap.erase(jobs.jobsMap.find(*it));
     }
 }
 
@@ -351,7 +352,7 @@ void ForegroundCommand::execute() {
         cerr << "smash error: fg: invalid arguments" << endl;
         return;
     } else if (GetNumOfArgs() == 1){//if no jobId was specified
-        jobToFg = jobs.jobsMap->end()->first;
+        jobToFg = jobs.jobsMap.end()->first;
     } else if (GetNumOfArgs() == 2){
         try {
             jobToFg = stoi(this->GetArgument(1));
@@ -377,7 +378,7 @@ void ForegroundCommand::execute() {
         }
         cout << jobEntry->GetCommand() << " : " << pidToFg << endl;
         *jobs.currJobInFg = JobsList::JobEntry(*jobEntry);//copy constructor
-        jobs.jobsMap->erase(jobToFg);//Iterators, pointers and references referring to elements removed by the function are invalidated.
+        jobs.jobsMap.erase(jobToFg);//Iterators, pointers and references referring to elements removed by the function are invalidated.
         waitpid(pidToFg, NULL, WUNTRACED);//WUNTRACED: also return if a child has stopped
         //getSmallShell().getJobsList().currJobInFg = -1;
     }
@@ -385,7 +386,7 @@ void ForegroundCommand::execute() {
 
 int findMaxJobIDbyStatus(SmallShell& sm, STATUS status){
     int maxLastStoppedJobId = -1;
-    for(map<int, JobsList::JobEntry*>::iterator it = sm.getJobsList().jobsMap->begin(); it != sm.getJobsList().jobsMap->end(); ++it){
+    for(map<int, JobsList::JobEntry*>::iterator it = sm.getJobsList().jobsMap.begin(); it != sm.getJobsList().jobsMap.end(); ++it){
         if(it->second->getStatus() == STOPPED){
             if(it->first > maxLastStoppedJobId){
                 maxLastStoppedJobId = it->first;
@@ -446,9 +447,9 @@ void QuitCommand::execute() {
     }
     if(numOfArgs > 1 && this->GetArgument(1) == "kill"){
         SmallShell& sm = getSmallShell();
-        int numJobs = sm.getJobsList().jobsMap->size();
+        int numJobs = sm.getJobsList().jobsMap.size();
         cout << "smash: sending SIGKILL signal to " << numJobs << " jobs:" << endl;
-        for(map<int, JobsList::JobEntry*>::iterator it = sm.getJobsList().jobsMap->begin(); it != sm.getJobsList().jobsMap->end(); ++it){
+        for(map<int, JobsList::JobEntry*>::iterator it = sm.getJobsList().jobsMap.begin(); it != sm.getJobsList().jobsMap.end(); ++it){
             int currJobPid = it->second->GetProcessID();
             cout << currJobPid << ": " << it->second->GetCommand() << endl;
             kill(currJobPid, 9);
@@ -493,8 +494,8 @@ void PipeCommand::execute() {
 KillInvalidArg::KillInvalidArg() : SmashExceptions("smash error: kill: invalid arguments"){}*/
 
 JobsList::JobEntry* JobsList::getJobById(int jobId) {
-    if(this->jobsMap->find(jobId)->first != jobsMap->end()->first){
-        return this->jobsMap->find(jobId)->second;
+    if(this->jobsMap.find(jobId)->first != jobsMap.end()->first){
+        return this->jobsMap.find(jobId)->second;
     }else{
         return nullptr;
     }
@@ -512,7 +513,6 @@ JobsList::JobEntry* JobsList::getJobById(int jobId) {
     this->lastStoppedJobID = maxJobId;
 }*/
 
-pid_t JobsList::JobEntry::GetProcessID() {
 int JobsList::JobEntry::GetProcessID() {
     return this->processID;
 }
