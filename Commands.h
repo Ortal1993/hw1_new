@@ -14,6 +14,11 @@ enum STATUS{
     //FINISHED = 2
 };
 
+enum OUTPUT{
+    COUT = 1,
+    CERR = 2
+};
+
 class SmallShell;
 
 class Command{
@@ -188,11 +193,18 @@ class QuitCommand : public BuiltInCommand {
 
 ///special commands
 class PipeCommand : public Command {
-    // TODO: Add your data members
+    std::vector<std::string> leftCommand;
+    std::vector<std::string> rightCommand;
+    OUTPUT out;
+    int stdout_copy;
 public:
-    PipeCommand(const char* cmd_line): Command(cmd_line){};
-    virtual ~PipeCommand() {}
+    PipeCommand(const char* cmd_line);
+    virtual ~PipeCommand();
     void execute() override;
+    std::vector<std::string>& getLeft(){return this->leftCommand;};
+    std::vector<std::string>& getRight(){return this->rightCommand;};
+    OUTPUT getOut() {return out;}
+    int getOutput() {return stdout_copy;}
 };
 
 class CatCommand : public BuiltInCommand {

@@ -87,7 +87,6 @@ bool _isPipeCommand(const char* cmd_line){
     int size = s.size();
     while(i < size){
         if(s.at(i) == '|'){
-            cout << "curr char" << s[i] << endl;
             return true;
         }else{
             i++;
@@ -168,10 +167,6 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
 void SmallShell::executeCommand(const char *cmd_line) {
   // TODO: Add your implementation here
-  // for example:
-  // Command* cmd = CreateCommand(cmd_line);
-  // cmd->execute();
-  // Please note that you must fork smash process for some commands (e.g., external commands....)
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
     delete cmd;
@@ -212,23 +207,20 @@ int Command::GetNumOfArgs() {
     return this->arguments.size();
 }
 
-RedirectionCommand::RedirectionCommand(const char* cmd_line): Command(cmd_line){
+RedirectionCommand::RedirectionCommand(const char* cmd_line): Command(cmd_line), fd(1){
     for(int i = 0; i < this->GetNumOfArgs(); i++) {
         if (this->GetArgument(i) == ">" || this->GetArgument(i) == ">>") {
+            this->stdout_copy = dup(1);
+            close(1);
+            int newFd;
             if (this->GetArgument(i) == ">") {
-                this->stdout_copy = dup(1);
-                close(1);
-                int newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR|O_CREAT, 0666);
-                close(newFd);
-                newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR);
-                this->fd = newFd;
-                break;
+                newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR|O_CREAT, 0666);
+                lseek(newFd, 0, SEEK_SET);
+            }else{
+                newFd = open(this->GetArgument(i + 1).c_str(), O_APPEND|O_CREAT|O_RDWR, 0666);
             }
-            if (this->GetArgument(i) == ">>") {
-                int newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR|O_CREAT, 0666);
-                this->fd = newFd;
-                break;
-            }
+            this->fd = newFd;
+            break;
         }else{
             this->leftCommand.push_back(this->GetArgument(i));
         }
@@ -236,8 +228,8 @@ RedirectionCommand::RedirectionCommand(const char* cmd_line): Command(cmd_line){
 }
 
 RedirectionCommand::~RedirectionCommand(){
-    close(this->fd);
-    dup2(this->stdout_copy, 1);
+    //close(this->fd);
+    dup2(this->stdout_copy, this->fd);///check success??
 }
 
 void RedirectionCommand::execute() {///should remove the &?
@@ -257,7 +249,7 @@ void ExternalCommand::execute(){
         const char* originalCmd = getCmd();
         _removeBackgroundSign((char *)originalCmd);
         string str = originalCmd;
-        cout << "CMD IS: " << str << endl;
+        //cout << "CMD IS: " << str << endl;
         char* argv[] = {(char*)"/bin/bash", (char*)"-c", (char*) originalCmd, NULL};
         execv(argv[0], argv);
         exit(1);
@@ -277,8 +269,8 @@ void ExternalCommand::execute(){
             int newJobId = jobs.nextID;
             JobsList::JobEntry * newJobEntry = new JobsList::JobEntry(newJobId, pid, (string)getCmd(),time(NULL),BACKGROUND);
             //JobsList::JobEntry newJobEntry(pid, (string)getCmd(), time(NULL), BACKGROUND);
-            cout << "SON PID: " << newJobEntry->GetProcessID() <<endl;
-            cout << "JOB ID: " << newJobEntry->getJobID() <<endl;
+            //cout << "SON PID: " << newJobEntry->GetProcessID() <<endl;
+            //cout << "JOB ID: " << newJobEntry->getJobID() <<endl;
             jobs.nextID++;
             jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(newJobId,newJobEntry));//added the job to the job list
         }
@@ -533,34 +525,65 @@ void QuitCommand::execute() {
 }
 
 ///pipe
-void PipeCommand::execute() {
-    char currChar;
-    int i = 0;
-    while(i < GetNumOfArgs()) {
-        string currArg = this->GetArgument(i);
-        if (currArg == "<") {
-
-        } else if (currArg == "<<") {
-
-        } else if (currArg == "|") {
-
-        } else if (currArg == "|&") {
-
+PipeCommand::PipeCommand(const char *cmd_line):Command(cmd_line) {
+    for(int i = 0; i < this->GetNumOfArgs(); i++) {
+        if (this->GetArgument(i) == "|" || this->GetArgument(i) == "|&") {
+            if(this->GetArgument(i) == "|"){
+                this->out = COUT;
+                this->stdout_copy = dup(1);
+            }else{
+                this->out = CERR;
+                this->stdout_copy = dup(2);
+            }
+            i++;
+            while(i < GetNumOfArgs()){
+                this->rightCommand.push_back(this->GetArgument(i++));
+            }
+            break;
         }
+        this->leftCommand.push_back(this->GetArgument(i));
     }
-    /*int my_pipe[2];
-    char buffer[2];
-    int num;
+}
+
+void PipeCommand::execute() {
+    int my_pipe[2];
     pipe(my_pipe);
+    //int num = 0;
+    //char buffer;
+    //char* args;
     if(fork() == 0){//child
         setpgrp();
-        close(my_pipe[1]);
-        read(my_pipe[0], buffer, num);
-    }else{//father
+        dup2(my_pipe[1], 1);
         close(my_pipe[0]);
-        write(my_pipe[1], , num);
-    }*/
+        //close(my_pipe[1]);
+        std::string left = "";
+        for(int i = 0; i < this->getLeft().size(); i++){
+            left += this->getLeft()[i];
+            left += " ";
+        }
+        this->getSmallShell().executeCommand(left.c_str());
+        /*while (read(my_pipe[0], &buffer, 1) > 0){
+            args[num] = buffer;
+            num++;
+        }*/
+    }else{//father
+        dup2(my_pipe[0], 0);
+        close(1);
+        close(my_pipe[0]);
+        close(my_pipe[1]);
+        std::string right = "";
+        for(int i = 0; i < this->getRight().size(); i++){
+            right += this->getRight()[i];
+            right += " ";
+        }
+        this->getSmallShell().executeCommand(right.c_str());
+        /*write(my_pipe[1], args, num);*/
+    }
 }
+
+PipeCommand::~PipeCommand(){
+    dup2(this->getOutput(), this->getOut());
+};
 
 /*const char* SmashExceptions::what() const noexcept{
     return what_message.c_str();
