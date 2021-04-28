@@ -8,19 +8,20 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
-enum STATUS{///???
+enum STATUS{
     BACKGROUND = 0,
     STOPPED = 1,
-    FINISHED = 2
+    //FINISHED = 2
 };
 
 class SmallShell;
 
 class Command{
     private:
-        const char* cmd_line;///maybe const char*?
+        const char* cmd_line;
         std::vector<std::string> arguments;
         SmallShell& sms;
+        //std::ostream* out;
     public:
         Command(const char* cmd_line);
         virtual ~Command() {};
@@ -32,6 +33,8 @@ class Command{
         int GetNumOfArgs();
         SmallShell& getSmallShell() {return this->sms;}
         const char* getCmd (){return this->cmd_line;}
+        //std::ostream& getOstream() {return *this->out;};
+        //void setOstream(std::ostream* newOut) {this->out = newOut;}
 };
 
 class BuiltInCommand : public Command {
@@ -47,11 +50,23 @@ class ExternalCommand : public Command {
         void execute() override;
 };
 
-///func 1 - chprompt
-class RedirectionCommand : public Command {///why inherits from Command?
+class RedirectionCommand : public Command {
+    private:
+        int fd;
+        int stdout_copy;
+        std::vector<std::string> leftCommand;
     public:
-        explicit RedirectionCommand(const char* cmd_line): Command(cmd_line){};//, ptrPrompt(ptrPrompt){};
-        virtual ~RedirectionCommand() {}
+        RedirectionCommand(const char* cmd_line);
+        virtual ~RedirectionCommand();
+        void execute() override;
+        std::vector<std::string>& getLeftCommand() {return this->leftCommand;};
+};
+
+///func 1 - chprompt
+class ChangePromptCommand : public Command {///why inherits from Command?
+    public:
+        explicit ChangePromptCommand(const char* cmd_line): Command(cmd_line){};//, ptrPrompt(ptrPrompt){};
+        virtual ~ChangePromptCommand() {}
         void execute() override;
         //void prepare() override;
         //void cleanup() override;

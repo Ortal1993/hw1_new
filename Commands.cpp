@@ -8,6 +8,7 @@
 #include "Commands.h"
 #include <limits.h>
 #include <utility>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -80,6 +81,35 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
+bool _isPipeCommand(const char* cmd_line){
+    int i = 0;
+    string s = _trim(string(cmd_line));
+    int size = s.size();
+    while(i < size){
+        if(s.at(i) == '|'){
+            cout << "curr char" << s[i] << endl;
+            return true;
+        }else{
+            i++;
+        }
+    }
+    return false;
+}
+
+bool _isRedirectionCommand(const char* cmd_line){
+    int i = 0;
+    string s = _trim(string(cmd_line));
+    int size = s.size();
+    while(i < size){
+        if(s.at(i) == '>'){
+            return true;
+        }else{
+            i++;
+        }
+    }
+    return false;
+}
+
 // TODO: Add your implementation for classes in Commands.h 
 
 //SmallShell::SmallShell() {
@@ -97,8 +127,14 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   string cmd_s = _trim(string(cmd_line));
   string firstWord = cmd_s.substr(0, cmd_s.find_first_of(WHITESPACE));///originally \n///if we get chprompt&
 
-  if(firstWord.compare("chprompt") == 0){
+  if(_isPipeCommand(cmd_line)){
+      return new PipeCommand(cmd_line);
+  }
+  if(_isRedirectionCommand(cmd_line)){
       return new RedirectionCommand(cmd_line);
+  }
+  if(firstWord.compare("chprompt") == 0){
+      return new ChangePromptCommand(cmd_line);
   }
   else if (firstWord.compare("showpid") == 0) {
       return new ShowPidCommand(cmd_line);
@@ -138,7 +174,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Please note that you must fork smash process for some commands (e.g., external commands....)
     Command* cmd = CreateCommand(cmd_line);
     cmd->execute();
-    ///delete cmd;
+    delete cmd;
 }
 
 std::string SmallShell::GetPrompt() {
@@ -176,6 +212,43 @@ int Command::GetNumOfArgs() {
     return this->arguments.size();
 }
 
+RedirectionCommand::RedirectionCommand(const char* cmd_line): Command(cmd_line){
+    for(int i = 0; i < this->GetNumOfArgs(); i++) {
+        if (this->GetArgument(i) == ">" || this->GetArgument(i) == ">>") {
+            if (this->GetArgument(i) == ">") {
+                this->stdout_copy = dup(1);
+                close(1);
+                int newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR|O_CREAT, 0666);
+                close(newFd);
+                newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR);
+                this->fd = newFd;
+                break;
+            }
+            if (this->GetArgument(i) == ">>") {
+                int newFd = open(this->GetArgument(i + 1).c_str(), O_RDWR|O_CREAT, 0666);
+                this->fd = newFd;
+                break;
+            }
+        }else{
+            this->leftCommand.push_back(this->GetArgument(i));
+        }
+    }
+}
+
+RedirectionCommand::~RedirectionCommand(){
+    close(this->fd);
+    dup2(this->stdout_copy, 1);
+}
+
+void RedirectionCommand::execute() {///should remove the &?
+    std::string leftCommand = "";
+    for(int i = 0; i < this->getLeftCommand().size(); i++){
+        leftCommand += this->getLeftCommand()[i];
+        leftCommand += " ";
+    }
+    this->getSmallShell().executeCommand(leftCommand.c_str());
+}
+
 void ExternalCommand::execute(){
     SmallShell& sm = getSmallShell();
     pid_t pid = fork();
@@ -210,7 +283,6 @@ void ExternalCommand::execute(){
             jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(newJobId,newJobEntry));//added the job to the job list
         }
     }
-
 }
 
 ///func 1 - showpid
@@ -219,7 +291,7 @@ void ShowPidCommand::execute() {
 }
 
 ///func 2 - chprompt
-void RedirectionCommand::execute(){
+void ChangePromptCommand::execute(){
     int numOfArgs = this->GetNumOfArgs();
     SmallShell& sm = getSmallShell();
     if (numOfArgs == 1){///arguments[0] = command
@@ -516,7 +588,7 @@ JobsList::JobEntry* JobsList::getJobById(int jobId) {
     this->lastStoppedJobID = maxJobId;
 }*/
 
-//int JobsList::JobEntry::GetProcessID() {
+pid_t JobsList::JobEntry::GetProcessID() {
     return this->processID;
 }
 
