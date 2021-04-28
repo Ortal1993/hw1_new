@@ -31,6 +31,11 @@ void ctrlCHandler(int sig_num) {
         jobsList.currJobInFg = nullptr;
         cout << "smash: process " << pid << " was killed" << endl;
     }
+    if (!jobsList.jobsMap.empty()) {
+        jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;///
+    }else {
+        jobsList.nextID = 1;
+    }
 }
 
 void alarmHandler(int sig_num) {
