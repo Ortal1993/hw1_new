@@ -377,6 +377,7 @@ void JobsCommand::execute(){
     }
     for (auto it = vec.begin(); it != vec.end(); ++it){ //removes the terminated process from the jobsList
         //cout << "JOBID TO BE ERASED " << *it << endl;
+        delete jobs.jobsMap.find(*it)->second;///Added. Maybe there is no need
         jobs.jobsMap.erase(jobs.jobsMap.find(*it));
     }
     if (!jobs.jobsMap.empty()) {
@@ -389,6 +390,7 @@ void JobsCommand::execute(){
 ///func 6 - kill
 void KillCommand::execute() {
     int numOfArgs = this->GetNumOfArgs();
+    int jobId;
     if (numOfArgs != 3) {///arguments[0] = command ///if we get: kill -  9 7 - is it legal?
         cerr << "smash error: kill: invalid arguments" << endl;
     }else{
@@ -403,7 +405,7 @@ void KillCommand::execute() {
             signumStr = signumStr.substr(1);
             int signum = stoi(signumStr);
             string jobIdStr = GetArgument(2);
-            int jobId = stoi(jobIdStr); ///std::invalid_argument
+            jobId = stoi(jobIdStr); ///std::invalid_argument
             if(getSmallShell().getJobsList().getJobById(jobId) != nullptr){
                 int processID = getSmallShell().getJobsList().getJobById(jobId)->GetProcessID();
                 cout << "signal number " << signum << " was sent to pid " << processID << endl;
@@ -411,6 +413,9 @@ void KillCommand::execute() {
                 if(error == -1){
                     perror("smash error: kill failed");
                 }
+            }
+            else {
+                cerr << "smash error: kill: job-id " << jobId << " does not exist" << endl;
             }
         }
     }
