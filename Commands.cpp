@@ -87,7 +87,6 @@ bool _isPipeCommand(const char* cmd_line){
     int size = s.size();
     while(i < size){
         if(s.at(i) == '|'){
-            cout << "curr char" << s[i] << endl;
             return true;
         }else{
             i++;
@@ -544,12 +543,13 @@ void QuitCommand::execute() {
 PipeCommand::PipeCommand(const char *cmd_line):Command(cmd_line) {
     for(int i = 0; i < this->GetNumOfArgs(); i++) {
         if (this->GetArgument(i) == "|" || this->GetArgument(i) == "|&") {
+            this->stdin_copy = dup(0);
             if(this->GetArgument(i) == "|"){
                 this->out = COUT;
-                this->stdout_copy = dup(1);
+                this->stdout_copy = dup(COUT);
             }else{
                 this->out = CERR;
-                this->stdout_copy = dup(2);
+                this->stdout_copy = dup(CERR);
             }
             i++;
             while(i < GetNumOfArgs()){
@@ -564,27 +564,19 @@ PipeCommand::PipeCommand(const char *cmd_line):Command(cmd_line) {
 void PipeCommand::execute() {
     int my_pipe[2];
     pipe(my_pipe);
-    //int num = 0;
-    //char buffer;
-    //char* args;
     if(fork() == 0){//child
         setpgrp();
-        dup2(my_pipe[1], 1);
+        dup2(my_pipe[1], this->getOut());
+        close(my_pipe[1]);
         close(my_pipe[0]);
-        //close(my_pipe[1]);
         std::string left = "";
         for(int i = 0; i < this->getLeft().size(); i++){
             left += this->getLeft()[i];
             left += " ";
         }
         this->getSmallShell().executeCommand(left.c_str());
-        /*while (read(my_pipe[0], &buffer, 1) > 0){
-            args[num] = buffer;
-            num++;
-        }*/
     }else{//father
         dup2(my_pipe[0], 0);
-        close(1);
         close(my_pipe[0]);
         close(my_pipe[1]);
         std::string right = "";
@@ -593,11 +585,11 @@ void PipeCommand::execute() {
             right += " ";
         }
         this->getSmallShell().executeCommand(right.c_str());
-        /*write(my_pipe[1], args, num);*/
     }
 }
 
 PipeCommand::~PipeCommand(){
+    dup2(this->getInput(), 0);
     dup2(this->getOutput(), this->getOut());
 };
 

@@ -197,6 +197,7 @@ class PipeCommand : public Command {
     std::vector<std::string> rightCommand;
     OUTPUT out;
     int stdout_copy;
+    int stdin_copy;
 public:
     PipeCommand(const char* cmd_line);
     virtual ~PipeCommand();
@@ -205,6 +206,7 @@ public:
     std::vector<std::string>& getRight(){return this->rightCommand;};
     OUTPUT getOut() {return out;}
     int getOutput() {return stdout_copy;}
+    int getInput() {return stdin_copy;}
 };
 
 class CatCommand : public BuiltInCommand {
