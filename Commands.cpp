@@ -160,6 +160,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("quit") == 0){
       return new QuitCommand(cmd_line);
   }
+  else if (firstWord.compare("cat") == 0){
+      return new CatCommand(cmd_line);
+  }
   else {
       return new ExternalCommand(cmd_line);
   }
@@ -651,3 +654,33 @@ int JobsList::JobEntry::getJobID() {
 void JobsList::JobEntry::setTime(){
     this->enterTime = time(NULL);
 }
+
+void CatCommand::execute() {
+    for (int i = 1; i < this->GetNumOfArgs(); i++) {
+        int fd = open(this->GetArgument(i).c_str(), O_RDONLY , 0666);
+        int readNum = 0;
+        if (fd != -1) { //opened successfully
+            do {
+                readNum = read(fd, this->buf, 256);
+                if (readNum == -1) {
+                    perror("smash error: file reading failed");
+                    break;
+                }
+                int writeNum;
+                writeNum = write(1, this->buf, readNum);
+                if (writeNum == -1) {
+                    perror("smash error: file writing failed");
+                    break;
+                }
+                delete (this->buf);
+                this->buf = new char[256];
+            } while (readNum > 0);
+            close(fd);
+        } else {
+            perror("smash error: file opening failed");
+            break;
+        }
+    }
+}
+
+

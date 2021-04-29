@@ -208,9 +208,11 @@ public:
 };
 
 class CatCommand : public BuiltInCommand {
+    private:
+       char* buf;
     public:
-        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line){};
-        virtual ~CatCommand() {}
+        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line) {this->buf = new char[256];};
+        virtual ~CatCommand() {delete this->buf;}
         void execute() override;
 };
 
