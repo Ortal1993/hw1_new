@@ -9,9 +9,9 @@
 #define COMMAND_MAX_ARGS (20)
 
 enum STATUS{
-    BACKGROUND = 0,
-    STOPPED = 1,
-    //FINISHED = 2
+    FOREGROUND = 0,
+    BACKGROUND = 1,
+    STOPPED = 2
 };
 
 enum OUTPUT{
@@ -25,8 +25,7 @@ class Command{
     private:
         const char* cmd_line;
         std::vector<std::string> arguments;
-        SmallShell& sms;
-        //std::ostream* out;
+        SmallShell& smInstance;
     public:
         Command(const char* cmd_line);
         virtual ~Command() {};
@@ -36,7 +35,7 @@ class Command{
         // TODO: Add your extra methods if needed
         std::string GetArgument(int argNum);
         int GetNumOfArgs();
-        SmallShell& getSmallShell() {return this->sms;}
+        SmallShell& getSmallShell() {return this->smInstance;}
         const char* getCmd (){return this->cmd_line;}
         //std::ostream& getOstream() {return *this->out;};
         //void setOstream(std::ostream* newOut) {this->out = newOut;}
@@ -49,10 +48,12 @@ class BuiltInCommand : public Command {
 };
 
 class ExternalCommand : public Command {
+        STATUS status;
     public:
-        ExternalCommand(const char* cmd_line) : Command(cmd_line){};
+        ExternalCommand(const char* cmd_line, STATUS status = FOREGROUND) : Command(cmd_line), status(status){};
         virtual ~ExternalCommand() {}
         void execute() override;
+        STATUS getStatus() {return status;};
 };
 
 class RedirectionCommand : public Command {
@@ -99,18 +100,16 @@ class GetCurrDirCommand : public BuiltInCommand {
 ///func 4 - cd
 class ChangeDirCommand : public BuiltInCommand {
     public:
-        ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}//ChangeDirCommand(const char* cmd_line, char** lastPwd = nullptr, char** currentPwd = nullptr);
+        ChangeDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line){}
         virtual ~ChangeDirCommand() {}
         void execute() override;
 };
 
-class JobsList {///it should also be created once, no?
-    //private:
+class JobsList {
     public:
         class JobEntry {
             private:
                 int jobID;
-                /*int signal;*/
                 pid_t processID;
                 std::string command;
                 time_t enterTime;
@@ -119,16 +118,15 @@ class JobsList {///it should also be created once, no?
                 JobEntry(int jobID, pid_t processID, std::string command, time_t enterTime, STATUS status = BACKGROUND): jobID(jobID), processID(processID), command(command), enterTime(enterTime), status(status){};
                 JobEntry(const JobEntry& jobEntry) = default;
                 ~JobEntry() = default;
-                pid_t GetProcessID();
-                std::string GetCommand();
+                pid_t getProcessID();
+                std::string getCommand();
                 STATUS getStatus();
                 void setStatus(STATUS newStatus);
                 time_t getTime();
                 int getJobID();
                 void setTime();
-                /*void SetSignal(int signal);*/
         };
-        std::map<int, JobEntry*> jobsMap;///the key is jobID
+        std::map<int, JobEntry*> jobsMap;//the key is jobID
         JobEntry* currJobInFg;
         int nextID;
         int lastStoppedJobID;
@@ -222,8 +220,7 @@ class SmallShell {
         std::string currentPwd;
         std::string prompt;
         JobsList jobsList;
-        SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}///getpid is always successful according to man
-        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"){ this->jobsList = new JobsList();}///getpid is always successful according to man
+        SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}//getpid is always successful according to man
     public:
         class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);

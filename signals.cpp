@@ -14,7 +14,7 @@ void ctrlZHandler(int sig_num) {
         jobsList.currJobInFg->setStatus(STOPPED);
         jobsList.currJobInFg->setTime();
         jobsList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobsList.currJobInFg->getJobID(), jobsList.currJobInFg));//added job to jobList
-        pid_t pid = jobsList.currJobInFg->GetProcessID();
+        pid_t pid = jobsList.currJobInFg->getProcessID();
         kill(pid, SIGSTOP);
         jobsList.currJobInFg = nullptr;
         cout << "smash: process " << pid << " was stopped" << endl;
@@ -26,7 +26,7 @@ void ctrlCHandler(int sig_num) {
     SmallShell& sm = SmallShell::getInstance();
     JobsList& jobsList = sm.getJobsList();
     if (jobsList.currJobInFg) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
-        pid_t pid = jobsList.currJobInFg->GetProcessID();
+        pid_t pid = jobsList.currJobInFg->getProcessID();
         kill(pid, SIGKILL);
         jobsList.currJobInFg = nullptr;
         cout << "smash: process " << pid << " was killed" << endl;
