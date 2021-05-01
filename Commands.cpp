@@ -520,7 +520,7 @@ void BackgroundCommand::execute() {
                 cerr << "smash error: bg: job-id " << jobID << " is already running in the background" << endl;
             }
         }else{
-            cerr << "smash error: bg: job-id" << jobID << "does not exist" << endl;
+            cerr << "smash error: bg: \"job-id" << jobID << "does not exist\"" << endl;
         }
     }
 }
@@ -548,13 +548,10 @@ void QuitCommand::execute() {
 PipeCommand::PipeCommand(const char *cmd_line):Command(cmd_line) {
     for(int i = 0; i < this->GetNumOfArgs(); i++) {
         if (this->GetArgument(i) == "|" || this->GetArgument(i) == "|&") {
-            this->stdin_copy = dup(0);
             if(this->GetArgument(i) == "|"){
                 this->out = COUT;
-                this->stdout_copy = dup(COUT);
             }else{
                 this->out = CERR;
-                this->stdout_copy = dup(CERR);
             }
             i++;
             while(i < GetNumOfArgs()){
@@ -569,7 +566,9 @@ PipeCommand::PipeCommand(const char *cmd_line):Command(cmd_line) {
 void PipeCommand::execute() {
     int my_pipe[2];
     pipe(my_pipe);
-    if(fork() == 0){//child
+    int p1;
+    int p2;
+    if((p1 = fork()) == 0){//child
         setpgrp();
         dup2(my_pipe[1], this->getOut());
         close(my_pipe[1]);
@@ -580,7 +579,9 @@ void PipeCommand::execute() {
             left += " ";
         }
         this->getSmallShell().executeCommand(left.c_str());
-    }else{//father
+        exit(0);
+    }if((p2 = fork()) == 0){//second child
+        setpgrp();
         dup2(my_pipe[0], 0);
         close(my_pipe[0]);
         close(my_pipe[1]);
@@ -590,13 +591,13 @@ void PipeCommand::execute() {
             right += " ";
         }
         this->getSmallShell().executeCommand(right.c_str());
-    }
+        exit(0);
+    };
+    close(my_pipe[0]);
+    close(my_pipe[1]);
+    waitpid(p1, NULL, 0);
+    waitpid(p2, NULL, 0);
 }
-
-PipeCommand::~PipeCommand(){
-    dup2(this->getInput(), 0);
-    dup2(this->getOutput(), this->getOut());
-};
 
 /*const char* SmashExceptions::what() const noexcept{
     return what_message.c_str();

@@ -196,24 +196,20 @@ class PipeCommand : public Command {
     std::vector<std::string> leftCommand;
     std::vector<std::string> rightCommand;
     OUTPUT out;
-    int stdout_copy;
-    int stdin_copy;
 public:
     PipeCommand(const char* cmd_line);
-    virtual ~PipeCommand();
+    virtual ~PipeCommand() {};
     void execute() override;
     std::vector<std::string>& getLeft(){return this->leftCommand;};
     std::vector<std::string>& getRight(){return this->rightCommand;};
     OUTPUT getOut() {return out;}
-    int getOutput() {return stdout_copy;}
-    int getInput() {return stdin_copy;}
 };
 
 class CatCommand : public BuiltInCommand {
     private:
        char* buf;
     public:
-        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line) {this->buf = new char[256];};
+        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line) {this->buf = new char[256];};///why it is 256?
         virtual ~CatCommand() {delete this->buf;}
         void execute() override;
 };
