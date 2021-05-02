@@ -131,9 +131,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     }
 
     string copiedCmd = cmd_line;
-    bool background = false;
-    while(_isBackgroundComamnd(copiedCmd.c_str())){
-        background = true;
+    //bool background = false;
+    while(_isBackgroundComamnd(copiedCmd.c_str())){///???
+        //background = true;
         _removeBackgroundSign((char*)copiedCmd.c_str());
     }
 
@@ -171,13 +171,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         return new CatCommand(cmd_line);
     }
     else {
-        if(background){
-            return new ExternalCommand(cmd_line, BACKGROUND);
-        }else{
-            return new ExternalCommand(cmd_line);
-        }
+        return new ExternalCommand(cmd_line);
     }
-  return nullptr;
+    return nullptr;
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -270,10 +266,10 @@ RedirectionCommand::RedirectionCommand(const char* cmd_line): Command(cmd_line),
                     if (newFd == -1) {
                         perror("smash error: open failed");
                     }
-                    int lSeek = lseek(newFd, 0, SEEK_SET);
+                    /*int lSeek = lseek(newFd, 0, SEEK_SET);
                     if (lSeek == -1) {
                         perror("smash error: lseek failed");
-                    }
+                    }*/
                 } else {
                     newFd = open(this->GetArgument(i + 1).c_str(), O_APPEND | O_CREAT | O_RDWR, 0666);
                     if (newFd == -1) {
@@ -711,27 +707,30 @@ void JobsList::JobEntry::setTime(){
 
 void CatCommand::execute() {
     for (int i = 1; i < this->GetNumOfArgs(); i++) {
-        int fd = open(this->GetArgument(i).c_str(), O_RDONLY , 0666);
         int readNum = 0;
-        if (fd != -1) { //opened successfully
-            do {
-                readNum = read(fd, this->buf, 256);
-                if (readNum == -1) {
-                    perror("smash error: cat failed");
-                    break;
-                }
-                int writeNum;
-                writeNum = write(1, this->buf, readNum);
-                if (writeNum == -1) {
-                    perror("smash error: cat failed");
-                    break;
-                }
-                delete (this->buf);
-                this->buf = new char[256];
-            } while (readNum > 0);
-            close(fd);
-        } else {
-            perror("smash error: cat failed");
+        int fd = open(this->GetArgument(i).c_str(), O_RDONLY , 0666);
+        if (fd == -1) {
+            perror("smash error: open failed");
+            break;
+        }
+        do { //opened successfully
+            readNum = read(fd, this->buf, 256);
+            if (readNum == -1) {
+                perror("smash error: read failed");
+                return;
+            }
+            int writeNum;
+            writeNum = write(1, this->buf, readNum);
+            if (writeNum == -1) {
+                perror("smash error: write failed");
+                return;
+            }
+            delete (this->buf);
+            this->buf = new char[256];
+        } while (readNum > 0);
+        int error = close(fd);
+        if(error == -1) {
+            perror("smash error: close failed");
             break;
         }
     }

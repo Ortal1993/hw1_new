@@ -50,7 +50,7 @@ class BuiltInCommand : public Command {
 class ExternalCommand : public Command {
         STATUS status;
     public:
-        ExternalCommand(const char* cmd_line, STATUS status = FOREGROUND) : Command(cmd_line), status(status){};
+        ExternalCommand(const char* cmd_line) : Command(cmd_line){};
         virtual ~ExternalCommand() {}
         void execute() override;
         STATUS getStatus() {return status;};
