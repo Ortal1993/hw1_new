@@ -208,12 +208,12 @@ Command::Command(const char *cmd_line): cmd_line(cmd_line), smInstance(SmallShel
     string toParse = (string)this->cmd_line;
     toParse = _trim(toParse);
     int argLength = 0;
-    while(argLength < toParse.length() && (!(toParse.at(argLength) == '>' || toParse.at(argLength) == '|'))){
+    while(argLength < (int)toParse.length() && (!(toParse.at(argLength) == '>' || toParse.at(argLength) == '|'))){
         argLength++;
     }
     string currArgument;
     while(toParse.length() > 0){//arguments[0] = command
-        if(argLength == toParse.length()){
+        if(argLength == (int)toParse.length()){
             argLength = toParse.find_first_of(WHITESPACE);
             if (argLength == -1) {
                 string currArgument = toParse.substr(0, argLength);
@@ -293,7 +293,7 @@ RedirectionCommand::~RedirectionCommand() {
 
 void RedirectionCommand::execute() {
     std::string leftCommand = "";
-    for(int i = 0; i < this->getLeftCommand().size(); i++){
+    for(int i = 0; i < (int)this->getLeftCommand().size(); i++){
         leftCommand += this->getLeftCommand()[i];
         leftCommand += " ";
     }
@@ -350,7 +350,7 @@ void ExternalCommand::execute(){
     else{//father
         int lastArgument = this->GetNumOfArgs();
         string str = this->GetArgument(lastArgument - 1);
-        if(str == "&" | _isBackgroundComamnd(str.c_str())){//should run in background
+        if((str == "&") | _isBackgroundComamnd(str.c_str())){//should run in background
             removeFinishedJobs(sm); //removing all finished jobs before adding a new one
             JobsList& jobs = getSmallShell().getJobsList();
             JobsList::JobEntry * newJobEntry = new JobsList::JobEntry(jobs.nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
@@ -386,7 +386,7 @@ void ChangePromptCommand::execute(){
 void GetCurrDirCommand::execute() {
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        std::cout << "Current working dir: " << cwd << endl;
+        std::cout << cwd << endl;
     } else {
         perror("smash error: getcwd failed");
         return;
@@ -400,13 +400,13 @@ void ChangeDirCommand::execute() {
     string lastPwd = sm.getLastPwd();
     string currentPwd = sm.getCurrentPwd();
     if (numOfArgs > 2){//print error
-        std::cerr << "smash error: cd: \"too many arguments\"" << endl;
+        std::cerr << "smash error: cd: too many arguments" << endl;
     }else if (numOfArgs == 2){
         string newPath = this->GetArgument(1);
         if (newPath == "-" && lastPwd != ""){
             const char * path = lastPwd.c_str();
             int error = chdir(path);
-            if(chdir(path) == -1){//syscall failed
+            if(error == -1){//syscall failed
                 perror("smash error: chdir failed");
                 return;
             }
@@ -415,7 +415,7 @@ void ChangeDirCommand::execute() {
                 sm.setCurrentPwd(lastPwd);
             }
         } else if (newPath == "-" && lastPwd == ""){
-            std::cerr << "smash error: cd: \"OLDPWD not set\""  << endl;
+            std::cerr << "smash error: cd: OLDPWD not set"  << endl;
         } else if(newPath == ".."){
             char cwd[PATH_MAX];
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -489,9 +489,9 @@ void KillCommand::execute() {
             cerr << "smash error: kill: \"invalid arguments\"" << endl;
         }else if(i == 1){
             sigNumStr = sigNumStr.substr(1);
-            int signum;
+            int signum = 0;
             try{
-                int signum = stoi(sigNumStr);
+                signum = stoi(sigNumStr);
             }
             catch (const std::invalid_argument& ia){
                 cerr << "smash error: fg: \"invalid arguments\"" << endl;
@@ -629,11 +629,12 @@ void BackgroundCommand::execute() {
 ///func 9 - quit
 void QuitCommand::execute() {
     int numOfArgs = this->GetNumOfArgs();
-    if(numOfArgs == 1 || numOfArgs > 1 && this->GetArgument(1) != "kill"){
+    if(numOfArgs == 1 || (numOfArgs > 1 && this->GetArgument(1) != "kill")){
         exit(0xff);///???
     }
     if(numOfArgs > 1 && this->GetArgument(1) == "kill"){
         SmallShell& sm = getSmallShell();
+        removeFinishedJobs(sm); //remove finished jobs
         int numJobs = sm.getJobsList().jobsMap.size();
         cout << "smash: sending SIGKILL signal to " << numJobs << " jobs:" << endl;
         for(map<int, JobsList::JobEntry*>::iterator it = sm.getJobsList().jobsMap.begin(); it != sm.getJobsList().jobsMap.end(); ++it){
@@ -707,7 +708,7 @@ void PipeCommand::execute() {
             return;
         }
         std::string left = "";
-        for(int i = 0; i < this->getLeft().size(); i++){
+        for(int i = 0; i < (int)this->getLeft().size(); i++){
             left += this->getLeft()[i];
             left += " ";
         }
@@ -735,7 +736,7 @@ void PipeCommand::execute() {
             return;
         }
         std::string right = "";
-        for(int i = 0; i < this->getRight().size(); i++){
+        for(int i = 0; i < (int)this->getRight().size(); i++){
             right += this->getRight()[i];
             right += " ";
         }

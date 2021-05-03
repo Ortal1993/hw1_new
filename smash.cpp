@@ -12,9 +12,9 @@ int main(int argc, char* argv[]) {
     if(signal(SIGINT , ctrlCHandler)==SIG_ERR) {
         perror("smash error: failed to set ctrl-C handler");
     }
-    if(sigaction(SA_RESTART , alarmHandler)==SIG_ERR) {
+/*    if(sigaction(SA_RESTART , alarmHandler)==SIG_ERR) {
         perror("smash error: failed to set ctrl-C handler");
-    }
+    }*/
 
     //TODO: setup sig alarm handler
 
