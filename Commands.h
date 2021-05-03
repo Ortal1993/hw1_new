@@ -129,10 +129,8 @@ class JobsList {
         std::map<int, JobEntry*> jobsMap;//the key is jobID
         JobEntry* currJobInFg;
         int nextID;
-        int lastStoppedJobID;
     public:
-        JobsList():jobsMap(), currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){};//if lastStoppedJobID is -1 than no process has been stopped
-        //JobsList():currJobInFg(nullptr), nextID(1), lastStoppedJobID(-1){ this->jobsMap = new std::map<int, JobEntry*>();};//if lastStoppedJobID is -1 than no process has been stopped
+        JobsList():jobsMap(), currJobInFg(nullptr), nextID(1){};//if lastStoppedJobID is -1 than no process has been stopped
         ~JobsList() = default;
         void addJob(Command* cmd, bool isStopped = false);
         void printJobsList();

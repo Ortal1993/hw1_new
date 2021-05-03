@@ -32,7 +32,7 @@ void ctrlCHandler(int sig_num) {
         cout << "smash: process " << pid << " was killed" << endl;
     }
     if (!jobsList.jobsMap.empty()) {
-        jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;///
+        jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;
     }else {
         jobsList.nextID = 1;
     }
