@@ -126,12 +126,12 @@ class JobsList {
                 int getJobID();
                 void setTime();
         };
-        std::map<int, JobEntry*> jobsMap;//the key is jobID
+        std::map<int, JobEntry*> jobsMap;//jobsList - the key is jobID //timeoutList -the key is timeForAlarm
         JobEntry* currJobInFg;
         int nextID;
     public:
         JobsList():jobsMap(), currJobInFg(nullptr), nextID(1){};//if lastStoppedJobID is -1 than no process has been stopped
-        ~JobsList() = default;
+        ~JobsList();
         void addJob(Command* cmd, bool isStopped = false);
         void printJobsList();
         void killAllJobs();
@@ -205,9 +205,24 @@ class CatCommand : public BuiltInCommand {
     private:
        char* buf;
     public:
-        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line) {this->buf = new char[256];};///why it is 256?
+        CatCommand(const char* cmd_line): BuiltInCommand(cmd_line) {this->buf = new char[256];};
         virtual ~CatCommand() {delete this->buf;}
         void execute() override;
+};
+
+class TimeoutCommand : public BuiltInCommand {
+private:
+    //time_t timestamp;
+    time_t timeForAlarm;
+    time_t duration;
+    std::vector<std::string> commandToExe;
+public:
+    TimeoutCommand(const char* cmd_line);
+    virtual ~TimeoutCommand() {};
+    void execute() override;
+    std::vector<std::string>& getCommandToExe();
+    time_t getTimeForAlarm() {return this->timeForAlarm;};
+    time_t getDuration() {return this->duration;}
 };
 
 class SmallShell {
@@ -218,10 +233,11 @@ class SmallShell {
         std::string currentPwd;
         std::string prompt;
         JobsList jobsList;
+        JobsList timeoutList;
+        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(), timeoutList(){}//getpid is always successful according to man
         pid_t currCommandInFgPid;
-        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}//getpid is always successful according to man
         SmallShell();//getpid i
-public:
+    public:
         class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);
         SmallShell(SmallShell const&) = delete; // disable copy ctor
@@ -232,12 +248,12 @@ public:
         }
         ~SmallShell();
         void executeCommand(const char* cmd_line);
-        //TODO: add extra methods as needed
         pid_t getPid() {return pid;}
         std::string getLastPwd() {return lastPwd;}
         std::string getCurrentPwd() {return currentPwd;}
         std::string GetPrompt();
         JobsList& getJobsList();
+        JobsList& getTimeoutList();
         void setPrompt(std::string newPrompt) {prompt = newPrompt;}
         void setLastPwd(std::string pwd) {lastPwd = pwd;}
         void setCurrentPwd(std::string pwd) {currentPwd = pwd;}

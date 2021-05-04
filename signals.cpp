@@ -6,7 +6,6 @@
 using namespace std;
 
 void ctrlZHandler(int sig_num) {
-	// TODO: Add your implementation
     cout << "smash: got ctrl-Z" << endl;
     SmallShell& sm = SmallShell::getInstance();
     JobsList& jobsList = sm.getJobsList();
@@ -24,7 +23,11 @@ void ctrlZHandler(int sig_num) {
             pid = sm.getcurrCommandInFgPid();
             sm.setCurrCommandInFgPid(-1);
         }
-        kill(pid, SIGSTOP);
+        int error_kill = kill(pid, SIGSTOP);
+        if(error_kill == -1){
+            perror("smash error: kill failed");
+            return;
+        }
         cout << "smash: process " << pid << " was stopped" << endl;
     }
 }
@@ -35,7 +38,11 @@ void ctrlCHandler(int sig_num) {
     JobsList& jobsList = sm.getJobsList();
     if (jobsList.currJobInFg) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
         pid_t pid = jobsList.currJobInFg->getProcessID();
-        kill(pid, SIGKILL);
+        int error_kill = kill(pid, SIGKILL);
+        if(error_kill == -1){
+            perror("smash error: kill failed");
+            return;
+        }
         jobsList.currJobInFg = nullptr;
         cout << "smash: process " << pid << " was killed" << endl;
     }
@@ -47,6 +54,40 @@ void ctrlCHandler(int sig_num) {
 }
 
 void alarmHandler(int sig_num) {
-  // TODO: Add your implementation
+    cout << "smash: got an alarm" << endl;
+    SmallShell& sm = SmallShell::getInstance();
+    JobsList& jobsList = sm.getJobsList();
+    JobsList& timeoutList = sm.getTimeoutList();
+    pid_t pidToAlarm;
+    if(timeoutList.jobsMap.begin()->second != nullptr) {
+        pidToAlarm = timeoutList.jobsMap.begin()->second->getProcessID();
+        int error_kill = kill(pidToAlarm, SIGALRM);
+        if(error_kill == -1){
+            perror("smash error: kill failed");
+            return;
+        }
+        cout << timeoutList.jobsMap.begin()->second->getCommand() << " timed out!" << endl;
+
+        int jobId = timeoutList.jobsMap.begin()->second->getJobID();
+        JobsList::JobEntry* toErase = timeoutList.getJobById(jobId);
+        if(toErase != nullptr){
+            if(toErase->getStatus() == STOPPED || toErase->getStatus() == BACKGROUND) {
+                for (auto it = jobsList.jobsMap.begin(); it != jobsList.jobsMap.end(); ++it){ //removes the terminated process from the jobsList
+                    if(it->second == toErase) {
+                        delete jobsList.jobsMap.find(it->first)->second;///Added. Maybe there is no need
+                        jobsList.jobsMap.erase(jobsList.jobsMap.find(it->first));
+                    }
+
+                }
+            }
+            if (!jobsList.jobsMap.empty()) {
+                jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;
+            }else {
+                jobsList.nextID = 1;
+            }
+        }
+        delete timeoutList.jobsMap.find(timeoutList.jobsMap.begin()->first)->second;
+        timeoutList.jobsMap.erase(timeoutList.jobsMap.begin());
+    }
 }
 
