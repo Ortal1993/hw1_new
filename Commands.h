@@ -218,8 +218,10 @@ class SmallShell {
         std::string currentPwd;
         std::string prompt;
         JobsList jobsList;
-        SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}//getpid is always successful according to man
-    public:
+        pid_t currCommandInFgPid;
+        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(){}//getpid is always successful according to man
+        SmallShell();//getpid i
+public:
         class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);
         SmallShell(SmallShell const&) = delete; // disable copy ctor
@@ -239,6 +241,9 @@ class SmallShell {
         void setPrompt(std::string newPrompt) {prompt = newPrompt;}
         void setLastPwd(std::string pwd) {lastPwd = pwd;}
         void setCurrentPwd(std::string pwd) {currentPwd = pwd;}
+        void setCurrCommandInFgPid(pid_t pidComman){currCommandInFgPid = pidComman;}
+        pid_t getcurrCommandInFgPid(){return currCommandInFgPid;}
+
 };
 
 /*class Exceptions : public std::exception{

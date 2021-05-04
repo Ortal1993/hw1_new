@@ -357,7 +357,9 @@ void ExternalCommand::execute(){
             jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobs.nextID, newJobEntry));//added the job to the job list
             jobs.nextID++;
         }else{//should run in foreground
+            sm.setCurrCommandInFgPid(pid);///
             int error_waitpid = waitpid(pid,NULL, WUNTRACED);
+            sm.setCurrCommandInFgPid(-1);
             if(error_waitpid == -1){
                 perror("smash error: waitpid failed");
                 return;
@@ -853,3 +855,13 @@ void CatCommand::execute() {
 }
 
 KillInvalidArg::KillInvalidArg() : SmashExceptions("smash error: kill: invalid arguments"){}*/
+
+SmallShell::SmallShell():pid(getpid()), lastPwd(""), prompt("smash"), jobsList(), currCommandInFgPid(-1){
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        currentPwd = cwd;
+    }
+    else{
+        currentPwd = "";
+    }
+}
