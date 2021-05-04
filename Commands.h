@@ -32,13 +32,10 @@ class Command{
         virtual void execute() = 0;
         //virtual void prepare();
         //virtual void cleanup();
-        // TODO: Add your extra methods if needed
         std::string GetArgument(int argNum);
         int GetNumOfArgs();
         SmallShell& getSmallShell() {return this->smInstance;}
         const char* getCmd (){return this->cmd_line;}
-        //std::ostream& getOstream() {return *this->out;};
-        //void setOstream(std::ostream* newOut) {this->out = newOut;}
 };
 
 class BuiltInCommand : public Command {
@@ -58,11 +55,10 @@ class ExternalCommand : public Command {
 
 class RedirectionCommand : public Command {
     private:
-        int fd;
         int stdout_copy;
         std::vector<std::string> leftCommand;
     public:
-        RedirectionCommand(const char* cmd_line);
+        RedirectionCommand(const char* cmd_line): Command(cmd_line){};
         virtual ~RedirectionCommand();
         void execute() override;
         std::vector<std::string>& getLeftCommand() {return this->leftCommand;};
