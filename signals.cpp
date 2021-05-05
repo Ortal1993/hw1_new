@@ -75,35 +75,46 @@ void alarmHandler(int sig_num) {
     JobsList& jobsList = sm.getJobsList();
     JobsList& timeoutList = sm.getTimeoutList();
     pid_t pidToAlarm;
-    if(timeoutList.jobsMap.begin()->second != nullptr) {
-        pidToAlarm = timeoutList.jobsMap.begin()->second->getProcessID();
-        int error_kill = kill(pidToAlarm, SIGALRM);
-        if(error_kill == -1){
-            perror("smash error: kill failed");
-            return;
-        }
-        cout << timeoutList.jobsMap.begin()->second->getCommand() << " timed out!" << endl;
-
-        int jobId = timeoutList.jobsMap.begin()->second->getJobID();
-        JobsList::JobEntry* toErase = timeoutList.getJobById(jobId);
-        if(toErase != nullptr){
-            if(toErase->getStatus() == STOPPED || toErase->getStatus() == BACKGROUND) {
-                for (auto it = jobsList.jobsMap.begin(); it != jobsList.jobsMap.end(); ++it){ //removes the terminated process from the jobsList
-                    if(it->second == toErase) {
-                        delete jobsList.jobsMap.find(it->first)->second;///Added. Maybe there is no need
-                        jobsList.jobsMap.erase(jobsList.jobsMap.find(it->first));
+    if(timeoutList.jobsMap.size() != 0){
+        if(timeoutList.jobsMap.begin()->second != nullptr) {
+            pidToAlarm = timeoutList.jobsMap.begin()->second->getProcessID();
+            int error_kill = kill(pidToAlarm, SIGALRM);
+            if(error_kill == -1){
+                perror("smash error: kill failed");
+                return;
+            }
+            cout << timeoutList.jobsMap.begin()->second->getCommand() << " timed out!" << endl;
+            int jobId = timeoutList.jobsMap.begin()->second->getJobID();
+            JobsList::JobEntry* toErase = timeoutList.getJobById(jobId);
+            if(toErase != nullptr){
+                if(toErase->getStatus() == STOPPED || toErase->getStatus() == BACKGROUND) {
+                    for (auto it = jobsList.jobsMap.begin(); it != jobsList.jobsMap.end(); ++it){ //removes the terminated process from the jobsList
+                        if(it->second == toErase) {
+                            delete jobsList.jobsMap.find(it->first)->second;///Added. Maybe there is no need
+                            jobsList.jobsMap.erase(jobsList.jobsMap.find(it->first));
+                            break;
+                        }
                     }
-
+                }
+                if (!jobsList.jobsMap.empty()) {
+                    jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;
+                }else {
+                    jobsList.nextID = 1;
                 }
             }
-            if (!jobsList.jobsMap.empty()) {
-                jobsList.nextID = (--jobsList.jobsMap.end())->first + 1;
-            }else {
-                jobsList.nextID = 1;
-            }
+            delete timeoutList.jobsMap.find(timeoutList.jobsMap.begin()->first)->second;
+            timeoutList.jobsMap.erase(timeoutList.jobsMap.begin());
         }
-        delete timeoutList.jobsMap.find(timeoutList.jobsMap.begin()->first)->second;
-        timeoutList.jobsMap.erase(timeoutList.jobsMap.begin());
+    }
+
+    if(sm.getTimeoutList().jobsMap.size() != 0){
+        int tAlarm = sm.getTimeoutList().jobsMap.begin()->first - time(NULL);///if tAlarm is zero???
+        alarm(tAlarm);
+    }
+
+    cout << "timeoutJobs" << endl;
+    for (auto it = sm.getTimeoutList().jobsMap.begin(); it != sm.getTimeoutList().jobsMap.end(); ++it){ //removes the terminated process from the jobsList
+        cout << "[" << it->first << "] " << it->second->getCommand() << " : " << it->second->getProcessID() << " " << std::abs(difftime(it->second->getTime(), time(NULL))) << " secs" << endl;
     }
 }
 

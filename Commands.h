@@ -211,12 +211,11 @@ private:
     //time_t timestamp;
     time_t timeForAlarm;
     time_t duration;
-    std::vector<std::string> commandToExe;
 public:
     TimeoutCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
     virtual ~TimeoutCommand() {};
     void execute() override;
-    std::vector<std::string>& getCommandToExe();
+    //std::vector<std::string>& getCommandToExe();
     time_t getTimeForAlarm() {return this->timeForAlarm;};
     time_t getDuration() {return this->duration;}
 };
@@ -233,7 +232,6 @@ class SmallShell {
         const char* currCommandInFgCmd;
         SmallShell();
     public:
-        class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);
         SmallShell(SmallShell const&) = delete; // disable copy ctor
         void operator=(SmallShell const&) = delete; // disable = operator
@@ -258,27 +256,6 @@ class SmallShell {
         const char* getcurrCommandInFgCmd() {return this->currCommandInFgCmd;}
 };
 
-/*class Exceptions : public std::exception{
-    public:
-        Exceptions() : std::exception(){};
-        ~Exceptions() override = default;
-};
-
-class SmashExceptions: public Exceptions{
-    private:
-        std::string what_message;
-    protected:
-        explicit SmashExceptions(const std::string& exception_type);///EXPLICIT
-        ~SmashExceptions() override = default;
-    public:
-        const char* what() const noexcept override;
-};
-
-class KillInvalidArg: public SmashExceptions{
-    public:
-        KillInvalidArg();
-        ~KillInvalidArg();
-};*/
 
 
 #endif //SMASH_COMMAND_H_

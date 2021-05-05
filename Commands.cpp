@@ -491,6 +491,7 @@ void KillCommand::execute() {
     int jobId;
     if (numOfArgs != 3) {//arguments[0] = command
         cerr << "smash error: kill: invalid arguments" << endl;
+        return;
     }else{
         string sigNumStr = GetArgument(1);
         int i = 0;
@@ -499,6 +500,7 @@ void KillCommand::execute() {
         }
         if(i == 0 || i > 1) {
             cerr << "smash error: kill: invalid arguments" << endl;
+            return;
         }else if(i == 1){
             sigNumStr = sigNumStr.substr(1);
             int signum = 0;
@@ -531,6 +533,7 @@ void KillCommand::execute() {
                 getSmallShell().getJobsList().jobsMap.erase(jobId);*/            }
             else {
                 cerr << "smash error: kill: job-id " << jobId << " does not exist" << endl;
+                return;
             }
         }
     }
@@ -864,10 +867,6 @@ void CatCommand::execute() {
     }
 }
 
-std::vector<std::string> &TimeoutCommand::getCommandToExe() {
-    return this->commandToExe;
-}
-
 void TimeoutCommand::execute() {
     //initialize parameters
     int numArgs = this->GetNumOfArgs();
@@ -888,76 +887,74 @@ void TimeoutCommand::execute() {
         cerr << "smash error: timeout: invalid arguments" << endl;
         return;
     }
-    this->duration = dur;
     time_t currTime = time(NULL);
     this->timeForAlarm = currTime + dur;
 
+    vector<std::string> commandToExe;
     for(int i = 2; i < numArgs; i++){
-        this->commandToExe.push_back(this->GetArgument(i));
+        commandToExe.push_back(this->GetArgument(i));
     }
-    //start timeout
-    alarm(this->getDuration());
 
     std::string command = "";
-    for(int i = 0; i < (int)this->getCommandToExe().size(); i++){
-        command += this->getCommandToExe()[i];
+    for(int i = 0; i < (int)commandToExe.size(); i++){
+        command += commandToExe[i];
         command += " ";
     }
 
-    string firstWord = this->getCommandToExe()[0];
-    if(firstWord.compare("chprompt") == 0 || firstWord.compare("showpid") == 0 || firstWord.compare("pwd") == 0 ||
-            firstWord.compare("cd") == 0 || firstWord.compare("jobs") == 0 || firstWord.compare("kill") == 0 ||
-            firstWord.compare("fg") == 0 || firstWord.compare("bg") == 0 || firstWord.compare("quit") == 0 ||
-            firstWord.compare("cat") == 0){
-        this->getSmallShell().executeCommand(command.c_str());
-    }else{
-        SmallShell& sm = getSmallShell();
-        pid_t pid = fork();
-        if(pid == -1){
-            perror("smash error: fork failed");
+    SmallShell& sm = getSmallShell();
+    pid_t pid = fork();
+    if(pid == -1){
+        perror("smash error: fork failed");
+        return;
+    }
+    if(pid == 0) {// child
+        if(setpgrp() == -1){
+            perror("smash error: setpgrp failed");
             return;
         }
-        if(pid == 0) {// child
-            if(setpgrp() == -1){
-                perror("smash error: setpgrp failed");
-                return;
-            }
-            _removeBackgroundSign((char *)command.c_str());
-            char* argv[] = {(char*)"/bin/bash", (char*)"-c", (char*)command.c_str(), NULL};
-            int error_execv = execv(argv[0], argv);
-            if(error_execv == -1){
-                perror("smash error: execv failed");
-                return;
-            }
-            exit(0);
+        _removeBackgroundSign((char *)command.c_str());
+        char* argv[] = {(char*)"/bin/bash", (char*)"-c", (char*)command.c_str(), NULL};
+        int error_execv = execv(argv[0], argv);
+        if(error_execv == -1){
+            perror("smash error: execv failed");
+            return;
         }
-        else{//father
-            int lastArgument = this->getCommandToExe().size();
-            string str = this->getCommandToExe()[lastArgument - 1];
-            if((str == "&") || _isBackgroundComamnd(str.c_str())){//should run in background
-                removeFinishedJobs(sm); //removing all finished jobs before adding a new one
-                JobsList& jobs = sm.getJobsList();
-                JobsList::JobEntry * newJobEntry = new JobsList::JobEntry(jobs.nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
-                jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobs.nextID, newJobEntry));//added the job to the job list
-                JobsList& timeoutList = sm.getTimeoutList();
-                JobsList::JobEntry * timeEntry = new JobsList::JobEntry(jobs.nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
-                timeoutList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(this->getTimeForAlarm(), timeEntry));//added the job to the job list
-                jobs.nextID++;
-            }else{//should run in foreground
-                JobsList& timeoutList = sm.getTimeoutList();
-                JobsList::JobEntry * timeEntry = new JobsList::JobEntry(sm.getJobsList().nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
-                timeoutList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(this->getTimeForAlarm(), timeEntry));//added the job to the job list
-                int error_waitpid = waitpid(pid,NULL, WUNTRACED);
-                if(error_waitpid == -1){
-                    perror("smash error: waitpid failed");
-                    return;
-                }
+        exit(0);
+    }
+    else{//father
+        int lastArgument = commandToExe.size();
+        string str = commandToExe[lastArgument - 1];
+        if((str == "&") || _isBackgroundComamnd(str.c_str())){//should run in background
+            removeFinishedJobs(sm); //removing all finished jobs before adding a new one
+            JobsList& jobs = sm.getJobsList();
+            JobsList::JobEntry * newJobEntry = new JobsList::JobEntry(jobs.nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
+            jobs.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobs.nextID, newJobEntry));//added the job to the job list
+            JobsList& timeoutList = sm.getTimeoutList();
+            JobsList::JobEntry * timeEntry = new JobsList::JobEntry(jobs.nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
+            timeoutList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(dur + currTime, timeEntry));//added the job to the job list
+            jobs.nextID++;
+        }else{//should run in foreground
+            JobsList& timeoutList = sm.getTimeoutList();
+            JobsList::JobEntry * timeEntry = new JobsList::JobEntry(sm.getJobsList().nextID, pid, (string)getCmd(),time(NULL),BACKGROUND);
+            timeoutList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(dur + currTime, timeEntry));//added the job to the job list
+            /*if (sm.getcurrCommandInFgPid() == -1){
+                sm.setCurrCommandInFgPid(pid);
+                sm.setCurrCommandInFgCmd(getCmd());
+            }*/
+            int error_waitpid = waitpid(pid,NULL, WUNTRACED);
+            if(error_waitpid == -1){
+                perror("smash error: waitpid failed");
+                return;
             }
+            /*sm.setCurrCommandInFgPid(-1);*/
         }
     }
+
+    if(sm.getTimeoutList().jobsMap.size() != 0){
+        int tAlarm = sm.getTimeoutList().jobsMap.begin()->first - time(NULL);///if tAlarm is zero???
+        alarm(tAlarm);
+    }
 }
-
-
 
 SmallShell::SmallShell():pid(getpid()), lastPwd(""), prompt("smash"), jobsList(), currCommandInFgPid(-1){
     char cwd[PATH_MAX];
