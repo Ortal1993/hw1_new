@@ -307,13 +307,15 @@ void removeFinishedJobs(SmallShell& sm){
     std::vector<int> jobsToDelete;
     pid_t status = 0;
     for(auto it = jobs.jobsMap.begin(); it != jobs.jobsMap.end(); ++it){
-        status = waitpid(it->second->getProcessID(), nullptr, WNOHANG);
-        if (status == -1) {
-            perror("smash error: waitpid failed");
-            return;
-        }
-        if (status != 0) { //this process is zombie (terminated), need to be removed from jobs
-            jobsToDelete.push_back(it->first);
+        if (getpid() == sm.getPid()) {
+            status = waitpid(it->second->getProcessID(), nullptr, WNOHANG);
+            if (status == -1) {
+                perror("smash error: waitpid failed");
+                return;
+            }
+            if (status != 0) { //this process is zombie (terminated), need to be removed from jobs
+                jobsToDelete.push_back(it->first);
+            }
         }
     }
     for (auto it = jobsToDelete.begin(); it != jobsToDelete.end(); ++it){ //removes the terminated process from the jobsList
@@ -484,7 +486,7 @@ void JobsCommand::execute(){
 
 ///func 6 - kill
 void KillCommand::execute() {
-    removeFinishedJobs(getSmallShell());////
+    removeFinishedJobs(getSmallShell());
     int numOfArgs = this->GetNumOfArgs();
     int jobId;
     if (numOfArgs != 3) {//arguments[0] = command
@@ -543,8 +545,10 @@ void ForegroundCommand::execute() {
     if (GetNumOfArgs() > 2){
         cerr << "smash error: fg: invalid arguments" << endl;
         return;
-    } else if (GetNumOfArgs() == 1){//if no jobId was specified
-        jobToFg = (--jobs.jobsMap.end())->first;
+    } else if (GetNumOfArgs() == 1) {//if no jobId was specified
+        if (jobs.jobsMap.size() != 0) {
+            jobToFg = (--jobs.jobsMap.end())->first;
+        }
     } else if (GetNumOfArgs() == 2){
         try {
             jobToFg = stoi(this->GetArgument(1));
