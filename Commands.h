@@ -213,7 +213,7 @@ private:
     time_t duration;
     std::vector<std::string> commandToExe;
 public:
-    TimeoutCommand(const char* cmd_line);
+    TimeoutCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
     virtual ~TimeoutCommand() {};
     void execute() override;
     std::vector<std::string>& getCommandToExe();
@@ -222,7 +222,6 @@ public:
 };
 
 class SmallShell {
-    // TODO: Add your data members
     private:
         pid_t pid;///maybe not necessary
         std::string lastPwd;
@@ -230,9 +229,9 @@ class SmallShell {
         std::string prompt;
         JobsList jobsList;
         JobsList timeoutList;
-        //SmallShell(): pid(getpid()), lastPwd(""), currentPwd(""), prompt("smash"), jobsList(), timeoutList(){}//getpid is always successful according to man
         pid_t currCommandInFgPid;
-        SmallShell();//getpid i
+        const char* currCommandInFgCmd;
+        SmallShell();
     public:
         class SmashExceptions;
         Command *CreateCommand(const char* cmd_line);
@@ -253,9 +252,10 @@ class SmallShell {
         void setPrompt(std::string newPrompt) {prompt = newPrompt;}
         void setLastPwd(std::string pwd) {lastPwd = pwd;}
         void setCurrentPwd(std::string pwd) {currentPwd = pwd;}
-        void setCurrCommandInFgPid(pid_t pidComman){currCommandInFgPid = pidComman;}
+        void setCurrCommandInFgPid(pid_t pidCommand){ currCommandInFgPid = pidCommand;}
         pid_t getcurrCommandInFgPid(){return currCommandInFgPid;}
-
+        void setCurrCommandInFgCmd(const char* command){ currCommandInFgCmd = command;}
+        const char* getcurrCommandInFgCmd() {return this->currCommandInFgCmd;}
 };
 
 /*class Exceptions : public std::exception{

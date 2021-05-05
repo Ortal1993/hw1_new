@@ -123,6 +123,9 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
+    SmallShell& sm = getInstance();
+    sm.setCurrCommandInFgCmd(cmd_line);
+
     if(_isPipeCommand(cmd_line)){
         return new PipeCommand(cmd_line);
     }
@@ -358,11 +361,11 @@ void ExternalCommand::execute(){
         }else{//should run in foreground
             sm.setCurrCommandInFgPid(pid);///
             int error_waitpid = waitpid(pid,NULL, WUNTRACED);
-            sm.setCurrCommandInFgPid(-1);
             if(error_waitpid == -1){
                 perror("smash error: waitpid failed");
                 return;
             }
+            sm.setCurrCommandInFgPid(-1);
         }
     }
 }
@@ -857,7 +860,8 @@ std::vector<std::string> &TimeoutCommand::getCommandToExe() {
     return this->commandToExe;
 }
 
-TimeoutCommand::TimeoutCommand(const char* cmd_line): BuiltInCommand(cmd_line){
+void TimeoutCommand::execute() {
+    //initialize parameters
     int numArgs = this->GetNumOfArgs();
     if(numArgs < 3){
         cerr << "smash error: timeout: invalid arguments" << endl;
@@ -872,6 +876,10 @@ TimeoutCommand::TimeoutCommand(const char* cmd_line): BuiltInCommand(cmd_line){
         cerr << "smash error: timeout: invalid arguments" << endl;
         return;
     }
+    if(dur < 0){
+        cerr << "smash error: timeout: invalid arguments" << endl;
+        return;
+    }
     this->duration = dur;
     time_t currTime = time(NULL);
     this->timeForAlarm = currTime + dur;
@@ -879,9 +887,7 @@ TimeoutCommand::TimeoutCommand(const char* cmd_line): BuiltInCommand(cmd_line){
     for(int i = 2; i < numArgs; i++){
         this->commandToExe.push_back(this->GetArgument(i));
     }
-}
-
-void TimeoutCommand::execute() {
+    //start timeout
     alarm(this->getDuration());
 
     std::string command = "";
@@ -941,8 +947,6 @@ void TimeoutCommand::execute() {
             }
         }
     }
-    cout << "timeoutJobs" << endl;//self check
-    printJobs(getSmallShell().getTimeoutList());//self check
 }
 
 

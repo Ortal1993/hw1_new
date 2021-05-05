@@ -12,21 +12,28 @@ void ctrlZHandler(int sig_num) {
     if (jobsList.currJobInFg || sm.getcurrCommandInFgPid() != -1) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
         pid_t pid;
         if (jobsList.currJobInFg) {
-            jobsList.currJobInFg->setStatus(STOPPED);
-            jobsList.currJobInFg->setTime();
-            jobsList.jobsMap.insert(std::pair<int, JobsList::JobEntry *>(jobsList.currJobInFg->getJobID(),
-                                                                         jobsList.currJobInFg));//added job to jobList
             pid = jobsList.currJobInFg->getProcessID();
-            jobsList.currJobInFg = nullptr;
         }
         else{
             pid = sm.getcurrCommandInFgPid();
-            sm.setCurrCommandInFgPid(-1);
         }
         int error_kill = kill(pid, SIGSTOP);
         if(error_kill == -1){
             perror("smash error: kill failed");
             return;
+        }
+        if(jobsList.currJobInFg){
+            jobsList.currJobInFg->setStatus(STOPPED);
+            jobsList.currJobInFg->setTime();
+            jobsList.jobsMap.insert(std::pair<int, JobsList::JobEntry*>(jobsList.currJobInFg->getJobID(),
+                                                                        jobsList.currJobInFg));//added job to jobList
+            jobsList.currJobInFg = nullptr;
+        }else{
+            JobsList::JobEntry * newJobEntry = new JobsList::JobEntry(jobsList.nextID, pid, (string)sm.getcurrCommandInFgCmd(),time(NULL),STOPPED);
+            jobsList.jobsMap.insert(std::pair<int,JobsList::JobEntry*>(jobsList.nextID, newJobEntry));//added the job to the job list
+            jobsList.nextID++;
+            sm.setCurrCommandInFgPid(-1);
+            sm.setCurrCommandInFgCmd("");
         }
         cout << "smash: process " << pid << " was stopped" << endl;
     }
