@@ -43,12 +43,21 @@ void ctrlCHandler(int sig_num) {
     cout << "smash: got ctrl-C" << endl;
     SmallShell& sm = SmallShell::getInstance();
     JobsList& jobsList = sm.getJobsList();
-    if (jobsList.currJobInFg) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
-        pid_t pid = jobsList.currJobInFg->getProcessID();
+    if (jobsList.currJobInFg || sm.getcurrCommandInFgPid() != -1) { // if there is a job running in the foreground (otherwise, nothing will happen, will ignore)
+        pid_t pid;
+        if (jobsList.currJobInFg) {
+            pid = jobsList.currJobInFg->getProcessID();
+        }
+        else{
+            pid = sm.getcurrCommandInFgPid();
+        }
         int error_kill = kill(pid, SIGKILL);
         if(error_kill == -1){
             perror("smash error: kill failed");
             return;
+        }
+        if (sm.getcurrCommandInFgPid() != -1){
+            sm.setCurrCommandInFgPid(-1);
         }
         jobsList.currJobInFg = nullptr;
         cout << "smash: process " << pid << " was killed" << endl;

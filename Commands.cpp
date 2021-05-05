@@ -484,6 +484,7 @@ void JobsCommand::execute(){
 
 ///func 6 - kill
 void KillCommand::execute() {
+    removeFinishedJobs(getSmallShell());////
     int numOfArgs = this->GetNumOfArgs();
     int jobId;
     if (numOfArgs != 3) {//arguments[0] = command
@@ -516,13 +517,14 @@ void KillCommand::execute() {
             }
             if(getSmallShell().getJobsList().getJobById(jobId) != nullptr){
                 int processID = getSmallShell().getJobsList().getJobById(jobId)->getProcessID();
-                int jobId = getSmallShell().getJobsList().getJobById(jobId)->getJobID();
-                cout << "signal number " << signum << " was sent to pid " << processID << endl;
+                jobId = getSmallShell().getJobsList().getJobById(jobId)->getJobID();
+                //cout << "signal number " << signum << " was sent to pid " << processID << endl;
                 int error = kill(processID, signum);
                 if(error == -1){
                     perror("smash error: kill failed");
                     return;
                 }
+                cout << "signal number " << signum << " was sent to pid " << processID << endl;
                 /*delete getSmallShell().getJobsList().getJobById(jobId);///Added. Maybe there is no need
                 getSmallShell().getJobsList().jobsMap.erase(jobId);*/            }
             else {
