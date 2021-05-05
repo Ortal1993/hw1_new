@@ -537,6 +537,7 @@ void KillCommand::execute() {
 
 ///func 7 - fg
 void ForegroundCommand::execute() {
+    removeFinishedJobs(getSmallShell());
     int jobToFg;
     JobsList& jobs = getSmallShell().getJobsList();
     if (GetNumOfArgs() > 2){
@@ -598,6 +599,7 @@ int findMaxJobIDbyStatus(SmallShell& sm, STATUS status){
 
 ///func 8 - bg
 void BackgroundCommand::execute() {
+    removeFinishedJobs(getSmallShell());
     int numOfArgs = this->GetNumOfArgs();
     SmallShell& sm = getSmallShell();
     if(numOfArgs == 1){//no job-id was given, take the last stopped job with the maximal job-id
@@ -607,7 +609,7 @@ void BackgroundCommand::execute() {
         }else{
             JobsList::JobEntry* stoppedJobToBg = sm.getJobsList().getJobById(maxLastStoppedJobId);
             string cmdLine = stoppedJobToBg->getCommand();
-            cout << cmdLine << endl;
+            cout << cmdLine << " : " << stoppedJobToBg->getProcessID() << endl;
             int error_kill = kill(stoppedJobToBg->getProcessID(), SIGCONT);
             if(error_kill == -1){
                 perror("smash error: kill failed");
@@ -627,14 +629,14 @@ void BackgroundCommand::execute() {
         if(spcStoppedJobToBg != nullptr){ //specific job-id
             if(spcStoppedJobToBg->getStatus() == STOPPED){
                 string spcCmdLine = spcStoppedJobToBg->getCommand();
-                cout << spcCmdLine << endl;
+                cout << spcCmdLine << " : " << spcStoppedJobToBg->getProcessID() << endl;
                 kill(spcStoppedJobToBg->getProcessID(), SIGCONT);
                 spcStoppedJobToBg->setStatus(BACKGROUND);
             }else{
                 cerr << "smash error: bg: job-id " << jobID << " is already running in the background" << endl;
             }
         }else{
-            cerr << "smash error: bg: job-id" << jobID << "does not exist" << endl;
+            cerr << "smash error: bg: job-id " << jobID << " does not exist" << endl;
         }
     }
 }
