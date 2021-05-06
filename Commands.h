@@ -30,8 +30,6 @@ class Command{
         Command(const char* cmd_line);
         virtual ~Command() {};
         virtual void execute() = 0;
-        //virtual void prepare();
-        //virtual void cleanup();
         std::string GetArgument(int argNum);
         int GetNumOfArgs();
         SmallShell& getSmallShell() {return this->smInstance;}
@@ -70,16 +68,11 @@ class ChangePromptCommand : public Command {///why inherits from Command?
         explicit ChangePromptCommand(const char* cmd_line): Command(cmd_line){};//, ptrPrompt(ptrPrompt){};
         virtual ~ChangePromptCommand() {}
         void execute() override;
-        //void prepare() override;
-        //void cleanup() override;
 };
 
 ///func 2 - showpid
 class ShowPidCommand : public BuiltInCommand {
-    //private:
-        //pid_t pid;
     public:
-        //ShowPidCommand(const char* cmd_line, pid_t pid): BuiltInCommand(cmd_line), pid(pid){}
         ShowPidCommand(const char* cmd_line): BuiltInCommand(cmd_line){}
         virtual ~ShowPidCommand() = default;
         void execute() override;
@@ -128,17 +121,13 @@ class JobsList {
     public:
         JobsList():jobsMap(), currJobInFg(nullptr), nextID(1){};//if lastStoppedJobID is -1 than no process has been stopped
         ~JobsList();
-        void addJob(Command* cmd, bool isStopped = false);
-        void printJobsList();
-        void killAllJobs();
-        void removeFinishedJobs();
+        //void addJob(Command* cmd, bool isStopped = false);
+        //void printJobsList();
+        //void killAllJobs();
+        //void removeFinishedJobs();
         JobEntry* getJobById(int jobId);
-        void removeJobById(int jobId);
-        JobEntry* getLastJob(int* lastJobId);
-        /*JobEntry* getLastStoppedJob(int jobId);///in original passing pointer to int*/
-        /*int getLastStoppedJobID();
-        void setLastStoppedJobID(int maxJobId);*/
-        // TODO: Add extra methods or modify exisitng ones as needed
+        //void removeJobById(int jobId);
+        //JobEntry* getLastJob(int* lastJobId);
 };
 
 ///func 5 - jobs
@@ -208,14 +197,12 @@ class CatCommand : public BuiltInCommand {
 
 class TimeoutCommand : public BuiltInCommand {
 private:
-    //time_t timestamp;
     time_t timeForAlarm;
     time_t duration;
 public:
     TimeoutCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
     virtual ~TimeoutCommand() {};
     void execute() override;
-    //std::vector<std::string>& getCommandToExe();
     time_t getTimeForAlarm() {return this->timeForAlarm;};
     time_t getDuration() {return this->duration;}
 };
@@ -230,6 +217,7 @@ class SmallShell {
         JobsList timeoutList;
         pid_t currCommandInFgPid;
         const char* currCommandInFgCmd;
+        bool on_off;
         SmallShell();
     public:
         Command *CreateCommand(const char* cmd_line);
@@ -254,6 +242,8 @@ class SmallShell {
         pid_t getcurrCommandInFgPid(){return currCommandInFgPid;}
         void setCurrCommandInFgCmd(const char* command){ currCommandInFgCmd = command;}
         const char* getcurrCommandInFgCmd() {return this->currCommandInFgCmd;}
+        void setOnOff(){this->on_off = false;}
+        bool getOnOff(){return this->on_off;}
 };
 
 

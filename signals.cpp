@@ -90,7 +90,7 @@ void alarmHandler(int sig_num) {
                 if(toErase->getStatus() == STOPPED || toErase->getStatus() == BACKGROUND) {
                     for (auto it = jobsList.jobsMap.begin(); it != jobsList.jobsMap.end(); ++it){ //removes the terminated process from the jobsList
                         if(it->second == toErase) {
-                            delete jobsList.jobsMap.find(it->first)->second;///Added. Maybe there is no need
+                            delete jobsList.jobsMap.find(it->first)->second;
                             jobsList.jobsMap.erase(jobsList.jobsMap.find(it->first));
                             break;
                         }
@@ -108,13 +108,8 @@ void alarmHandler(int sig_num) {
     }
 
     if(sm.getTimeoutList().jobsMap.size() != 0){
-        int tAlarm = sm.getTimeoutList().jobsMap.begin()->first - time(NULL);///if tAlarm is zero???
+        int tAlarm = sm.getTimeoutList().jobsMap.begin()->first - time(NULL);
         alarm(tAlarm);
-    }
-
-    cout << "timeoutJobs" << endl;
-    for (auto it = sm.getTimeoutList().jobsMap.begin(); it != sm.getTimeoutList().jobsMap.end(); ++it){ //removes the terminated process from the jobsList
-        cout << "[" << it->first << "] " << it->second->getCommand() << " : " << it->second->getProcessID() << " " << std::abs(difftime(it->second->getTime(), time(NULL))) << " secs" << endl;
     }
 }
 
